@@ -1,0 +1,129 @@
+@font-face {
+  font-family: Charter;
+  src: url(./fonts/charter_regular.woff);
+  font-weight: normal;
+}
+@font-face {
+  font-family: Charter;
+  src: url(./fonts/charter_bold.woff);
+  font-weight: bold;
+}
+@font-face {
+  font-family: Charter;
+  src: url(./fonts/charter_italic.woff);
+  font-style: italic;
+}
+@font-face {
+  font-family: Charter;
+  src: url(./fonts/charter_bold_italic.woff);
+  font-style: italic;
+  font-weight: bold;
+}
+
+body {
+  font-family: Charter;
+  margin: 0;
+}
+h1 {
+  margin: 0 0 25px 0;
+}
+a {
+  color: #00449E;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+.highlight {
+  background-color: #c4ffe9;
+  /*background-color: #fffea8;*/
+  /*background-color: #e3e3e3;*/
+}
+.done {
+  text-decoration: line-through;
+}
+.item-div > .done {
+  color: #999;
+}
+.snippet {
+  margin: 4px 0 0 1px;
+  padding: 0 0 0 10px;
+  font-size: .85em;
+  color: #888;
+  /*border-left: 1px solid #ccc;*/
+  /*font-style: italic;*/
+}
+/* --- Markdown CSS --- */
+.md .bullet {
+  padding-right: 10px;
+  display: table-cell;
+}
+.md p {
+  display: inline;
+  margin: 0;
+}
+.md h1 {
+  margin: 22px 0 20px 0;
+}
+.md h2 {
+  margin: 15px 0 10px 0;
+}
+.md h3 {
+  margin: 8px 0 6px 0;
+}
+.md h4 {
+  margin: 6px 0 4px 0;
+}
+.md ol, .md ul {
+  display: table-cell;
+  padding: 0px;
+  margin: 0px;
+}
+.md li {
+  display: inline;
+}
+.md hr {
+  margin: 15px 0 5px 0;
+  border: 0;
+  border-bottom: 1px solid #ccc;
+}
+.md pre {
+  margin: 0;
+  padding: 8px 10px 8px 20px;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-left: 4px solid #19A974;
+  line-height: 1.2em;
+}
+.md pre > code {
+  border: 0;
+  background-color: #f0f0f0;
+  font-size: .90em;
+  color: #444;
+}
+.md code {
+  color: #d5008f; /* #5e2ca5 */
+  font-size: 1rem;
+  padding: 1px 4px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+}
+.md blockquote {
+  margin: 0;
+  padding: 8px 10px 8px 20px;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-left: 4px solid #357EDD;
+  line-height: 1.4em;
+  font-style: italic;
+}
+.md a {
+  color: #00449E;
+  text-decoration: none;
+}
+.md a:hover {
+  text-decoration: underline;
+}
