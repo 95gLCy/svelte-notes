@@ -114,7 +114,6 @@
     console.log('Added new item.')
   }
   const itemChanged = function(i) {
-    note.items[i] = note.items[i]
     if (!changed_items.includes(i))
       changed_items.push(i)
     // Set timeout (throttle).
@@ -192,7 +191,7 @@
   </div>
 
   {#each note.items as item, i (item.id)}
-    <NoteItem item={item} is_selected={selected === i} index={i}
+    <NoteItem item={item} selected={selected} index={i}
       on:select-item={e => selectItem(e.detail)}
       on:deselect-item={e => deselectItem(e.detail)}
       on:select-below={e => selectBelow(e.detail)}

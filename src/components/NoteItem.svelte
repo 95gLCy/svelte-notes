@@ -3,7 +3,7 @@
   import { createEventDispatcher } from 'svelte';
 
   export let item
-  export let is_selected
+  export let selected
   export let index
 
   let markup = new Markup()
@@ -88,10 +88,8 @@
     }
   }
 
-  let margin
-  $: {
-    margin = item.level * 34
-  }
+  $: is_selected = selected === index
+  $: margin = item.level * 34
 
 </script>
 
@@ -101,7 +99,7 @@
       <textarea class="item-ta" class:done={item.done} rows="1"
         bind:value={item.title} bind:this={selected_ta}
         on:keydown={event => handleKeyDown(event)} 
-        on:blur={deselect} on:input={changed}></textarea>
+        on:input={changed}></textarea>
     {:else}
       <div class="item-div" on:mousedown={clicked}>
         <div class="md" class:done={item.done} id={'anchor_' + index}>

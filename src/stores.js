@@ -237,20 +237,12 @@ const createNoteStore = function() {
     let i = notes.findIndex(x => x.id === note_id)
     if (i >= 0) {
       let items = notes[i].items
-      let src_item = {...items[src_index]}
-      let dest_item = {...items[dest_index]}
-      items[src_index] = {
-        ...dest_item,
-        position: src_item.position,
-        next: src_item.next,
-        previous: src_item.previous,
-      }
-      items[dest_index] = {
-        ...src_item,
-        position: dest_item.position,
-        next: dest_item.next,
-        previous: dest_item.previous,
-      }
+      let src_item = items[src_index]
+      let dest_position = items[dest_index].position
+      items[src_index] = items[dest_index]
+      items[src_index].position = src_item.position
+      items[dest_index] = src_item
+      items[dest_index].position = dest_position
       note_store.set(notes)
     }
   }
