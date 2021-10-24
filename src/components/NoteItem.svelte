@@ -1,5 +1,5 @@
 <script>
-  import { Markup } from '../markup'
+  import { Markup } from '../utils/markup'
   import { createEventDispatcher } from 'svelte';
 
   export let item
@@ -99,7 +99,7 @@
       <textarea class="item-ta" class:done={item.done} rows="1"
         bind:value={item.title} bind:this={selected_ta}
         on:keydown={event => handleKeyDown(event)} 
-        on:input={changed}></textarea>
+        on:blur={deselect} on:input={changed}></textarea>
     {:else}
       <div class="item-div" on:mousedown={clicked}>
         <div class="md" class:done={item.done} id={'anchor_' + index}>

@@ -1,15 +1,11 @@
 <script>
-import { notes, randomNoteId, search_term } from '../stores'
+
 import { onMount } from 'svelte'
-import { goto } from '$app/navigation'
+import { notes, randomId, search } from '../utils/note'
 
 console.log('> Dashboard')
 
 // Methods
-const isEmptyNote = function(note) {
-  return ((note.title.trim() === 'Untitled' || note.title.trim() === '') &&
-    note.items.length === 0)
-}
 const removeNote = function(note_id) {
   notes.removeNote(note_id)
   console.log('Removed note.')
@@ -78,8 +74,8 @@ $: {
 
 // Update search results (by note title).
 $: {
-  if ($search_term !== undefined && $search_term.trim() !== '') {
-    search_results = $notes.filter(x => matchesAllWords(x.title, $search_term))
+  if ($search !== undefined && $search.trim() !== '') {
+    search_results = $notes.filter(x => matchesAllWords(x.title, $search))
     search_results.sort((a, b) => b.date - a.date)
   }
   else
@@ -88,10 +84,10 @@ $: {
 
 // Update search result (by content).
 $: {
-  if ($search_term !== undefined && $search_term.trim() !== '') {
+  if ($search !== undefined && $search.trim() !== '') {
     search_content_results = $notes.filter(note => {
       let text = note.items.map(item => item.title).join('\n')
-      return matchesAllWords(text, $search_term)
+      return matchesAllWords(text, $search)
     })
     search_content_results.sort((a, b) => b.date - a.date)
   }
@@ -107,14 +103,6 @@ $: {
 }
 
 onMount(() => {
-  // Remove empty notes.
-  let temp_notes = [...$notes]
-  temp_notes.forEach(note => {
-    if (isEmptyNote(note))
-      notes.removeNote(note.id)
-  })
-  let removed_count = temp_notes.length - $notes.length
-  console.log('Removed ' + removed_count + ' empty notes.')
 })
 
 </script>
@@ -130,9 +118,9 @@ onMount(() => {
 <div>
   <div class="search-div">
     <label>Search:</label>
-    <input type="text" bind:value={$search_term} bind:this={search_input}/>
+    <input type="text" bind:value={$search} bind:this={search_input}/>
   </div>
-  <a href={randomNoteId()}>+ Add new note</a>
+  <a href={randomId()}>+ Add new note</a>
 </div>
 
 <div>
@@ -140,10 +128,10 @@ onMount(() => {
   {#if search_results !== undefined}
 
     <div class="period-label">Search by title</div>
-    {#each search_results as note, i}
+    {#each search_results as note (note.id)}
       <div class="note-link-div">
         <a href={note.id}>
-          {@html highlightSearchWords(note.title, $search_term)}
+          {@html highlightSearchWords(note.title, $search)}
         </a>
         <span class="counter">{showItemsCounter(note)}</span>
         <span class="remove-button" on:click={() => removeNote(note.id)}>[x]</span>
@@ -152,13 +140,13 @@ onMount(() => {
 
     {#if search_content_results !== undefined }
       <div class="period-label">Search by content</div>
-      {#each search_content_results as note, i}
+      {#each search_content_results as note (note.id)}
         <div class="note-link-div">
           <a href={note.id}>{note.title}</a>
           <span class="counter">{showItemsCounter(note)}</span>
           <span class="remove-button" on:click={() => removeNote(note.id)}>[x]</span>
           <div class="snippet">
-            {@html highlightSearchContent(note.items, $search_term)}
+            {@html highlightSearchContent(note.items, $search)}
           </div>
         </div>
       {/each}
@@ -169,7 +157,7 @@ onMount(() => {
     {#each time_periods as period}
       {#if period.notes.length > 0}
         <div class="period-label">{period.name}</div>
-        {#each period.notes as note, i}
+        {#each period.notes as note (note.id)}
           <div class="note-link-div">
             <a href={note.id}>{note.title}</a>
             <span class="counter">{showItemsCounter(note)}</span>

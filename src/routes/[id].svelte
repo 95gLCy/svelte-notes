@@ -1,10 +1,9 @@
 <script>
   import "../app.css"
   import { page } from '$app/stores'
-  import { notes } from '../stores'
-  import Sidebar from '../components/Sidebar.svelte'
+  import { notes } from '../utils/note'
   import NoteItem from '../components/NoteItem.svelte'
-  import { onMount } from 'svelte'
+  import { tick, onMount } from 'svelte'
 
   console.log('> Note')
 
@@ -20,27 +19,26 @@
     // trigger a change to `notes` and we have a watcher for that below. 
   }
 
-  var selected
-  var note
-  var title_ta
-  var save_timeout_items
-  var save_timeout_title
-  var changed_items = []
+  let selected
+  let note
+  let title_ta
+  let save_timeout_items
+  let save_timeout_title
+  let changed_items = []
   
   // Methods 
-  const selectItem = function(i) {
-    if (i >= 0 && i < note.items.length)
-      selected = i
+  const selectItem = function(index) {
+    if (index >= 0 && index < note.items.length)
+      selected = index
+    console.log(note.items[index])
   }
-  const isEmptyItem = function(i) {
-    return note.items[i].title.trim() === ''
-  }
-  const deselectItem = function(i) {
-    if (selected === i) {
+  const deselectItem = function(index) {
+    if (selected === index) {
+      let item = note.items[index]
       let offset = 0
-      if (isEmptyItem(i)) {
-        notes.removeItem(note_id, i)
-        changed_items = changed_items.filter(x => x !== i)
+      if (item.isEmpty()) {
+        notes.removeItemFromNote(note_id, index)
+        changed_items = changed_items.filter(x => x !== index)
         console.log('Removed empty item.')
         offset = 1
       }
@@ -61,19 +59,23 @@
       selectItem(i - 1)
     }
   }
-  const moveDown = function(i) {
+  const moveDown = async function(i) {
     if (i < note.items.length - 1) {
-      notes.switchItems(note_id, i, i + 1)
-      deselectItem(i)
+      notes.moveItemDownInNote(note_id, i)
+      // When we move an item, it will blur and deselect. We have to wait for
+      // that on-blur update.
+      await tick
       selectItem(i + 1)
       itemChanged(i)
       itemChanged(i + 1)
     }
   }
-  const moveUp = function(i) {
+  const moveUp = async function(i) {
     if (i > 0) {
-      notes.switchItems(note_id, i, i - 1)
-      deselectItem(i)
+      notes.moveItemUpInNote(note_id, i)
+      // When we move an item, it will blur and deselect. We have to wait for
+      // that on-blur update.
+      await tick
       selectItem(i - 1)
       itemChanged(i)
       itemChanged(i - 1)
@@ -91,36 +93,38 @@
       itemChanged(i)
     }
   }
-  const markDone = function(i) {
-    if (!isEmptyItem(i)) {
-      if (note.items[i].done === undefined)
-        note.items[i].done = true
+  const markDone = function(index) {
+    let item = note.items[index]
+    if (!item.isEmpty()) {
+      if (item.done === undefined)
+        item.done = true
       else
-        note.items[i].done = !note.items[i].done
-      itemChanged(i)
-      deselectItem(i)
-      selectItem(i + 1)
+        item.done = !item.done
+      itemChanged(index)
+      deselectItem(index)
+      selectItem(index + 1)
     }
   }
-  const addItemBelow = function(i) {
-    if (!isEmptyItem(i)) {
-      deselectItem(i)
-      addItem(i + 1)
+  const addItemBelow = function(index) {
+    let item = note.items[index]
+    if (!item.isEmpty()) {
+      deselectItem(index)
+      addItem(index + 1)
     }
   }
-  const addItem = function(position) {
-    notes.addItem(note_id, position)
-    selectItem(position)
+  const addItem = function(index) {
+    notes.addItemToNote(note_id, index)
+    selectItem(index)
     console.log('Added new item.')
   }
-  const itemChanged = function(i) {
-    if (!changed_items.includes(i))
-      changed_items.push(i)
+  const itemChanged = function(index) {
+    if (!changed_items.includes(index))
+      changed_items.push(index)
     // Set timeout (throttle).
     clearTimeout(save_timeout_items)
     save_timeout_items = window.setTimeout(() => {
       changed_items.forEach(i => {
-        notes.modifyItem(note_id, i)
+        notes.saveItem(note_id, i)
         console.log('Item ' + i + ' has changed.')
       })
       changed_items = []
@@ -134,7 +138,7 @@
     // Set timeout (throttle).
     clearTimeout(save_timeout_title)
     save_timeout_title = window.setTimeout(() => {
-      notes.modifyNoteTitle(note_id)
+      notes.saveNote(note_id)
       console.log('Title has changed.')
     }, save_delay)
   }
@@ -181,8 +185,6 @@
 <slot />
 
 {#if (note !== undefined)}
-  
-  <!-- <Sidebar items={note.items} /> -->
 
   <div class="title-div">
     <textarea class="title-ta" rows="1" bind:value={note.title}
