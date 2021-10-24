@@ -177,7 +177,7 @@
 </script>
 
 <svelte:head>
-	<title>Note {note_id}</title>
+  <title>Note {note_id}</title>
 </svelte:head>
 
 <svelte:window on:keydown={handleWindowKeyPress}/>

@@ -96,10 +96,12 @@
 <div class="background-div">
   <div style="margin-left: {margin.toString()}px;">
     {#if is_selected}
-      <textarea class="item-ta" class:done={item.done} rows="1"
-        bind:value={item.title} bind:this={selected_ta}
-        on:keydown={event => handleKeyDown(event)} 
-        on:blur={deselect} on:input={changed}></textarea>
+      <div style="background-color: white;">
+        <textarea class="item-ta" class:done={item.done} rows="1"
+          bind:value={item.title} bind:this={selected_ta}
+          on:keydown={event => handleKeyDown(event)} 
+          on:blur={deselect} on:input={changed}></textarea>
+      </div>
     {:else}
       <div class="item-div" on:mousedown={clicked}>
         <div class="md" class:done={item.done} id={'anchor_' + index}>

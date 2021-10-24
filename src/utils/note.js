@@ -19,12 +19,12 @@ export const randomId = function(length=8) {
 }
 
 const newItemPosition = function(items, index) {
-	if (items.length === 0)
-		return 1000
-	if (index === items.length)
-		return items[index - 1].position + 1000
-	return Math.round(
-		(items[index - 1].position + items[index].position) / 2)
+  if (items.length === 0)
+    return 1000
+  if (index === items.length)
+    return items[index - 1].position + 1000
+  return Math.round(
+    (items[index - 1].position + items[index].position) / 2)
 }
 
 class Item {
@@ -38,41 +38,41 @@ class Item {
 }
 
 export class Note {
-	constructor(note, items=[]) {
+  constructor(note, items=[]) {
     // id, title, date
     Object.assign(this, note)
     this.items = items
-	}
+  }
   isEmpty() {
     return ((this.title.trim() === 'Untitled' || this.title.trim() === '') &&
       this.items.length === 0)
   }
-	addItem(index) {
-		let new_item = new Item({
-			id: randomId(length=12),
-			note_id: this.id,
-			title: '',
-			level: (this.items.length === 0) ? 0 : this.items[index - 1].level,
-			position: newItemPosition(this.items, index),
+  addItem(index) {
+    let new_item = new Item({
+      id: randomId(length=12),
+      note_id: this.id,
+      title: '',
+      level: (this.items.length === 0) ? 0 : this.items[index - 1].level,
+      position: newItemPosition(this.items, index),
     })
-		this.items.splice(index, 0, new_item)
-		return new_item
-	}
-	removeItem(index) {
-		let removed_item = this.items[index]
-		this.items.splice(index, 1)
-		return removed_item
-	}
-	moveItemUp(index)  {
-		if (index > 0) {
-			this._moveItemUpOrDown(index, index - 1)
-		}
-	}
-	moveItemDown(index)  {
-		if (index < this.items.length - 1) {
-			this._moveItemUpOrDown(index, index + 1)
-		}
-	}
+    this.items.splice(index, 0, new_item)
+    return new_item
+  }
+  removeItem(index) {
+    let removed_item = this.items[index]
+    this.items.splice(index, 1)
+    return removed_item
+  }
+  moveItemUp(index)  {
+    if (index > 0) {
+      this._moveItemUpOrDown(index, index - 1)
+    }
+  }
+  moveItemDown(index)  {
+    if (index < this.items.length - 1) {
+      this._moveItemUpOrDown(index, index + 1)
+    }
+  }
   _moveItemUpOrDown(src_index, dest_index) {
     let src = new Item({...this.items[src_index]})
     src.position = this.items[dest_index].position

@@ -1,109 +1,108 @@
 <script>
+  import { onMount } from 'svelte'
+  import { notes, randomId, search } from '../utils/note'
 
-import { onMount } from 'svelte'
-import { notes, randomId, search } from '../utils/note'
+  console.log('> Dashboard')
 
-console.log('> Dashboard')
-
-// Methods
-const removeNote = function(note_id) {
-  notes.removeNote(note_id)
-  console.log('Removed note.')
-}
-const showItemsCounter = function(note) {
-  let plural_singular = note.items.length == 1 ? 'note' : 'notes'
-  return '(' + note.items.length + ' ' + plural_singular + ')'
-}
-const highlightSearchContent = function (items, search_term) {
-  let result = []
-  let words = search_term.trim().toLowerCase().split(' ')
-  items.forEach(item => {
-    if (words.some(w => item.title.toLowerCase().includes(w)))
-      result.push(highlightSearchWords(item.title, search_term))
-  })
-  return result.join('<br>')
-}
-const highlightSearchWords = function(text, search_term){
-  let words = search_term.trim().split(' ')
-  words.sort((a, b) => text.toLowerCase().indexOf(a) - text.toLowerCase().indexOf(b))
-  let remainder = text
-  let new_text = ''
-  // Each replacement needs to be done over the remaining text only because
-  // otherwise we may start replacing previous replacements (e.g. `span`).
-  words.forEach(w => {
-    let i = remainder.toLowerCase().indexOf(w)
-    if (i >= 0) {
-      new_text += remainder.substr(0, i) + '<span class="highlight">'
-        + remainder.substr(i, w.length) + '</span>'
-      remainder = remainder.substr(i + w.length)
-    }
-  })
-  new_text += remainder
-  return new_text
-}
-const matchesAllWords = function(text, search_term) {
-  let words = search_term.trim().toLowerCase().split(' ')
-  return words.every(w => text.toLowerCase().includes(w))
-}
-
-let search_input
-let search_results
-let search_content_results
-let time_periods = []
-
-let last_week = new Date()
-last_week.setDate(last_week.getDate() - 7)
-let yesterday = new Date()
-yesterday.setDate(yesterday.getDate() - 1)
-
-// Update notes in time periods.
-$: {
-  let todays, last_weeks, older
-  todays = $notes.filter(x => x.date.getTime() >= yesterday.getTime())
-  last_weeks = $notes.filter(x =>
-    x.date.getTime() >= last_week.getTime() &&
-    x.date.getTime() <= yesterday.getTime()
-  )
-  older = $notes.filter(x => x.date.getTime() <= last_week.getTime())
-  time_periods = [
-    {'name': 'Today', notes: todays},
-    {'name': 'Previous 7 days', notes: last_weeks},
-    {'name': 'Older', notes: older},
-  ]
-}
-
-// Update search results (by note title).
-$: {
-  if ($search !== undefined && $search.trim() !== '') {
-    search_results = $notes.filter(x => matchesAllWords(x.title, $search))
-    search_results.sort((a, b) => b.date - a.date)
+  // Methods
+  const removeNote = function(note_id) {
+    notes.removeNote(note_id)
+    console.log('Removed note.')
   }
-  else
-    search_results = undefined
-}
-
-// Update search result (by content).
-$: {
-  if ($search !== undefined && $search.trim() !== '') {
-    search_content_results = $notes.filter(note => {
-      let text = note.items.map(item => item.title).join('\n')
-      return matchesAllWords(text, $search)
+  const showItemsCounter = function(note) {
+    let plural_singular = note.items.length == 1 ? 'note' : 'notes'
+    return '(' + note.items.length + ' ' + plural_singular + ')'
+  }
+  const highlightSearchContent = function (items, search_term) {
+    let result = []
+    let words = search_term.trim().toLowerCase().split(' ')
+    items.forEach(item => {
+      if (words.some(w => item.title.toLowerCase().includes(w)))
+        result.push(highlightSearchWords(item.title, search_term))
     })
-    search_content_results.sort((a, b) => b.date - a.date)
+    return result.join('<br>')
   }
-  else
-    search_content_results = undefined
-}
-
-// Focus on search input.
-$: {
-  if (search_input !== undefined && search_input !== null) {
-    search_input.focus()
+  const highlightSearchWords = function(text, search_term){
+    let words = search_term.trim().split(' ')
+    words.sort((a, b) => text.toLowerCase().indexOf(a) - text.toLowerCase().indexOf(b))
+    let remainder = text
+    let new_text = ''
+    // Each replacement needs to be done over the remaining text only because
+    // otherwise we may start replacing previous replacements (e.g. `span`).
+    words.forEach(w => {
+      let i = remainder.toLowerCase().indexOf(w)
+      if (i >= 0) {
+        new_text += remainder.substr(0, i) + '<span class="highlight">'
+          + remainder.substr(i, w.length) + '</span>'
+        remainder = remainder.substr(i + w.length)
+      }
+    })
+    new_text += remainder
+    return new_text
   }
-}
+  const matchesAllWords = function(text, search_term) {
+    let words = search_term.trim().toLowerCase().split(' ')
+    return words.every(w => text.toLowerCase().includes(w))
+  }
 
-onMount(() => {
-})
+  let search_input
+  let search_results
+  let search_content_results
+  let time_periods = []
+
+  let last_week = new Date()
+  last_week.setDate(last_week.getDate() - 7)
+  let yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  // Update notes in time periods.
+  $: {
+    let todays, last_weeks, older
+    todays = $notes.filter(x => x.date.getTime() >= yesterday.getTime())
+    last_weeks = $notes.filter(x =>
+      x.date.getTime() >= last_week.getTime() &&
+      x.date.getTime() <= yesterday.getTime()
+    )
+    older = $notes.filter(x => x.date.getTime() <= last_week.getTime())
+    time_periods = [
+      {'name': 'Today', notes: todays},
+      {'name': 'Previous 7 days', notes: last_weeks},
+      {'name': 'Older', notes: older},
+    ]
+  }
+
+  // Update search results (by note title).
+  $: {
+    if ($search !== undefined && $search.trim() !== '') {
+      search_results = $notes.filter(x => matchesAllWords(x.title, $search))
+      search_results.sort((a, b) => b.date - a.date)
+    }
+    else
+      search_results = undefined
+  }
+
+  // Update search result (by content).
+  $: {
+    if ($search !== undefined && $search.trim() !== '') {
+      search_content_results = $notes.filter(note => {
+        let text = note.items.map(item => item.title).join('\n')
+        return matchesAllWords(text, $search)
+      })
+      search_content_results.sort((a, b) => b.date - a.date)
+    }
+    else
+      search_content_results = undefined
+  }
+
+  // Focus on search input.
+  $: {
+    if (search_input !== undefined && search_input !== null) {
+      search_input.focus()
+    }
+  }
+
+  onMount(() => {
+  })
 
 </script>
 
