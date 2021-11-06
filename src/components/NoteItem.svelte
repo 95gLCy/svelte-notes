@@ -77,6 +77,16 @@
       dispatch('decrease-indentation', index)
       event.preventDefault()
     }
+    // Collapse children.
+    if (key === '–' && event.altKey) {
+      dispatch('collapse', index)
+      event.preventDefault()
+    }
+    // Expand children.
+    if (key === '≠' && event.altKey) {
+      dispatch('expand', index)
+      event.preventDefault()
+    }
   }
 
   let selected_ta
@@ -106,6 +116,9 @@
       <div class="item-div" on:mousedown={clicked}>
         <div class="md" class:done={item.done} id={'anchor_' + index}>
           {@html parseContent()}
+          {#if item.collapsed !== undefined && item.collapsed.length > 0}
+            <span class="collapsed">+{item.collapsed.length}</span>
+          {/if}
         </div>
       </div>
     {/if}
@@ -151,5 +164,10 @@
     border: 0;
     border-bottom: 1px solid #ccc;
     background-color: #f2f2f2; /* #f6f6f6 #E8FDF5 */
+  }
+  .collapsed {
+    font-size: .95rem;
+    color: #999;
+    margin-left: 2px;
   }
 </style>

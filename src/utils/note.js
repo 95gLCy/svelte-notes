@@ -1,12 +1,5 @@
 import { writable, get } from 'svelte/store'
-import Dexie from 'dexie'
-
-const db = new Dexie('notes-database')
-
-db.version(1).stores({
-  notes: 'id,title,date',
-  items: '++id,note_id,text', // ,level,*collapsed,position,is_done
-})
+import { database } from '../utils/database'
 
 export const randomId = function(length=8) {
   let result = ''
@@ -43,9 +36,11 @@ export class Note {
     Object.assign(this, note)
     this.items = items
   }
+  isUntitled() {
+    return  this.title.trim() === 'Untitled' || this.title.trim() === ''
+  }
   isEmpty() {
-    return ((this.title.trim() === 'Untitled' || this.title.trim() === '') &&
-      this.items.length === 0)
+    return this.isUntitled() && this.items.length === 0
   }
   addItem(index) {
     let new_item = new Item({
@@ -54,6 +49,7 @@ export class Note {
       title: '',
       level: (this.items.length === 0) ? 0 : this.items[index - 1].level,
       position: newItemPosition(this.items, index),
+      collapsed: [],
     })
     this.items.splice(index, 0, new_item)
     return new_item
@@ -63,17 +59,7 @@ export class Note {
     this.items.splice(index, 1)
     return removed_item
   }
-  moveItemUp(index)  {
-    if (index > 0) {
-      this._moveItemUpOrDown(index, index - 1)
-    }
-  }
-  moveItemDown(index)  {
-    if (index < this.items.length - 1) {
-      this._moveItemUpOrDown(index, index + 1)
-    }
-  }
-  _moveItemUpOrDown(src_index, dest_index) {
+  switch_items(src_index, dest_index) {
     let src = new Item({...this.items[src_index]})
     src.position = this.items[dest_index].position
     let dest = new Item({...this.items[dest_index]})
@@ -81,39 +67,45 @@ export class Note {
     this.items[dest_index] = src
     this.items[src_index] = dest
   }
+  getChildren(index) {
+    if (index >= 0 && index < this.items.length) {
+      let children = []
+      let item = this.items[index]
+      for (let i = index + 1; i < this.items.length; i++) {
+        if (this.items[i].level > item.level)
+          children.push(this.items[i])
+        else
+          break
+      }
+      return children
+    }
+    return []
+  }
 }
 
 const createNoteStore = function() {
   const _store = writable([])
-  
-  // Load notes from database.
-  db.transaction('rw', ['notes', 'items'], tx => {
-    return tx.table('notes').toCollection().sortBy('date')
-      .then(notes => {
-        notes.forEach(x => {
-          let note = new Note(x)
-          tx.table('items').where('note_id').equals(note.id).sortBy('position')
-            .then(items => {
-              let none_empty_items = items.filter(x => x.title.trim() !== '')
-              note.items = none_empty_items.map(x => new Item(x))
-              if (note.isEmpty()) {
-                tx.table('notes').delete(note.id)
-                  .then(rsp => console.log('db remove empty note'))
-              } else {
-                _store.update(notes => [note, ...notes])
-                // Delete empty items.
-                items.map(x => {
-                  if (x.title.trim() === '') {
-                    tx.table('items').delete(x.id)
-                      .then(rsp => console.log('db remove item'))
-                  }
-                })
-              }
-            })
-            .catch(err => console.log(err))
-        })
-        console.log('db load')
+
+  let db = database()
+
+  db.loadNotes().then(notes => {
+    notes.forEach(note_content => {
+      let note = new Note(note_content)
+      db.loadItems(note.id).then(items => {
+        items = items.map(item_content => new Item(item_content))
+        note.items = items.filter(item => !item.isEmpty())
+        if (note.isEmpty()) {
+          db.deleteNote(note)
+        } else {
+          _store.update(notes => [note, ...notes])
+          let empty_items = items.filter(item => item.isEmpty())
+          empty_items.forEach(item => {
+            db.deleteItem(item)
+          })
+          console.log(note)
+        }
       })
+    })
   })
 
   const addNote = function(note_id) {
@@ -123,58 +115,33 @@ const createNoteStore = function() {
       date: new Date(),
       items: [],
     })
-    db.transaction('rw', ['notes'], tx => {
-      return tx.table('notes').add({
-        id: new_note.id,
-        title: new_note.title,
-        date: new_note.date,
-      })
+    db.addNote(new_note)
       .then(rsp => {
         _store.update(notes => [new_note, ...notes])
         console.log('db add note')
       })
       .catch(err => console.log('Note already exists in the database.'))
-    })
   }
 
   const removeNote = function(note_id) {
     let notes = get(_store)
-    let i = notes.findIndex(x => x.id === note_id)
-    if (i >= 0) {
-      notes.splice(i, 1)
+    let index = notes.findIndex(x => x.id === note_id)
+    if (index >= 0) {
+      let removed_note = notes[index]
+      notes.splice(index, 1)
+      db.deleteNote(removed_note)
       _store.set(notes)
-      // db
-      db.transaction('rw', ['notes', 'items'], tx => {
-        return tx.table('notes').delete(note_id)
-          .then(rsp => {
-            return tx.table('items').where('note_id').equals(note_id).delete()
-              .then(rsp => console.log('db remove note'))
-          })
-      })
     }
   }
 
   const addItemToNote = function(note_id, item_index) {
     let notes = get(_store)
-    console.log(notes)
-    let i = notes.findIndex(x => x.id === note_id)
-    if (i >= 0) {
-      let new_item = notes[i].addItem(item_index)
+    let index = notes.findIndex(x => x.id === note_id)
+    if (index >= 0) {
+      let new_item = notes[index].addItem(item_index)
       _store.set(notes)
-      // db
-      db.transaction('rw', ['items'], tx => {
-        return tx.table('items').add({
-          id: new_item.id,
-          note_id: new_item.note_id,
-          title: new_item.title,
-          level: new_item.level,
-          position: new_item.position,
-        })
-        .then(item_id => {
-          // notes[i].items[item_index].id = item_id
-          console.log('db add item')
-        })
-      })
+      db.addItem(new_item)
+        .then(item => console.log('db add item'))
     }
   }
 
@@ -184,75 +151,89 @@ const createNoteStore = function() {
     if (i >= 0) {
       let removed_item = notes[i].removeItem(item_index)
       _store.set(notes)
-      // db
-      db.transaction('rw', ['items'], tx => {
-        return tx.table('items').delete(removed_item.id)
-          .then(rsp => console.log('db remove item'))
-      })
+      db.deleteItem(removed_item)
     }
   }
 
-  const saveItem = function(note_id, item_index) {
+  const saveItemChanges = function(note_id, item_index) {
     let notes = get(_store)
-    let i = notes.findIndex(x => x.id === note_id)
-    if (i >= 0) {
-      let item = notes[i].items[item_index]
-      // Any changes to the item should already be reflected in the item.
-      let changes = {
-        title: item.title,
-        level: item.level,
-        position: item.position,
-        done: item.done,
-      }
-      // db
-      db.transaction('rw', ['items'], tx => {
-        return tx.table('items').where('id').equals(item.id).modify(changes)
-          .then(rsp => {
-            if (rsp > 0)
-              console.log('db change item')
-            else
-              console.log('db no change')
-          })
-      })
+    let index = notes.findIndex(x => x.id === note_id)
+    if (index >= 0) {
+      let item = notes[index].items[item_index]
+      db.saveItemChanges(item)
     }
   }
 
-  const moveItemUpInNote = function(note_id, src_index) {
+  const saveNoteChanges = function(note_id) {
     let notes = get(_store)
-    let i = notes.findIndex(x => x.id === note_id)
-    if (i >= 0) {
-      notes[i].moveItemUp(src_index)
+    let index = notes.findIndex(x => x.id === note_id)
+    if (index >= 0) {
+      let note = notes[index]
+      db.saveNoteChanges(note)
+    }
+  }
+
+  const moveItemUpInNote = function(note_id, item_index) {
+    let notes = get(_store)
+    let index = notes.findIndex(x => x.id === note_id)
+    if (index >= 0 && item_index > 0) {
+      notes[index].switch_items(item_index, item_index - 1)
       _store.set(notes)
+      db.saveItemChanges(notes[index].items[item_index])
+      db.saveItemChanges(notes[index].items[item_index - 1])
     }
   }
 
-  const moveItemDownInNote = function(note_id, src_index) {
+  const moveItemDownInNote = function(note_id, item_index) {
     let notes = get(_store)
-    let i = notes.findIndex(x => x.id === note_id)
-    if (i >= 0) {
-      notes[i].moveItemDown(src_index)
+    let index = notes.findIndex(x => x.id === note_id)
+    if (index >= 0 && item_index < notes[index].items.length - 1) {
+      notes[index].switch_items(item_index, item_index + 1)
       _store.set(notes)
+      db.saveItemChanges(notes[index].items[item_index])
+      db.saveItemChanges(notes[index].items[item_index + 1])
     }
   }
 
-  const saveNote = function(note_id) {
+  const collapseItemsInNote = function(note_id, collapse_index) {
     let notes = get(_store)
-    let i = notes.findIndex(x => x.id === note_id)
-    if (i >= 0) {
-      let note = notes[i]
-      let changes = {
-        title: note.title
-      }
-      // db
-      db.transaction('rw', ['notes'], tx => {
-        return tx.table('notes').where('id').equals(note_id).modify(changes)
-          .then(rsp => {
-            if (rsp > 0)
-              console.log('db change note')
-            else
-              console.log('db no change')
-          })
+    let index = notes.findIndex(x => x.id === note_id)
+    if (index >= 0) {
+      let item = notes[index].items[collapse_index]
+      let children = notes[index].getChildren(collapse_index)
+      children = children.map(child => {
+        child.level -= item.level
+        return child
       })
+      if (!('collapsed' in item))
+        item.collapsed = []
+      item.collapsed = [...item.collapsed, ...children]
+      notes[index].items.splice(collapse_index + 1, children.length)
+      _store.set(notes)
+      children.forEach(child_to_delete => {
+        db.deleteItem(child_to_delete)
+      })
+      db.saveItemChanges(item)
+    }
+  }
+
+  const expandItemsInNote = function(note_id, expand_index) {
+    let notes = get(_store)
+    let index = notes.findIndex(x => x.id === note_id)
+    if (index >= 0) {
+      let item = notes[index].items[expand_index]
+      let children = item.collapsed
+      children.forEach((child, k) => {
+        child.id = randomId(length=12)
+        child.level += item.level
+        child.position = newItemPosition(notes[index].items, expand_index + k + 1)
+        notes[index].items.splice(expand_index + k + 1, 0, new Item(child))
+        db.addItem(child)
+          .then(item => console.log('db add item'))
+      })
+      item.collapsed = []
+      _store.set(notes)
+      db.saveItemChanges(item)
     }
   }
 
@@ -262,10 +243,12 @@ const createNoteStore = function() {
     removeNote,
     addItemToNote,
     removeItemFromNote,
-    saveItem,
+    saveItemChanges,
+    saveNoteChanges,
     moveItemUpInNote,
     moveItemDownInNote,
-    saveNote,
+    collapseItemsInNote,
+    expandItemsInNote,
   }
 }
 

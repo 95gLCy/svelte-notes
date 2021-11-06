@@ -55,8 +55,17 @@
   let yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
 
-  // Update notes in time periods.
+
   $: {
+    // Check for empty notes and remove them.
+    $notes.forEach(note => {
+      if (note.isEmpty())
+        notes.removeNote(note.id)
+    })
+  }
+
+  $: {
+    // Update notes in time periods.
     let todays, last_weeks, older
     todays = $notes.filter(x => x.date.getTime() >= yesterday.getTime())
     last_weeks = $notes.filter(x =>
@@ -71,8 +80,8 @@
     ]
   }
 
-  // Update search results (by note title).
   $: {
+    // Update search results (by note title).
     if ($search !== undefined && $search.trim() !== '') {
       search_results = $notes.filter(x => matchesAllWords(x.title, $search))
       search_results.sort((a, b) => b.date - a.date)
@@ -81,8 +90,8 @@
       search_results = undefined
   }
 
-  // Update search result (by content).
   $: {
+    // Update search result (by content).
     if ($search !== undefined && $search.trim() !== '') {
       search_content_results = $notes.filter(note => {
         let text = note.items.map(item => item.title).join('\n')
@@ -94,8 +103,8 @@
       search_content_results = undefined
   }
 
-  // Focus on search input.
   $: {
+    // Focus on search input.
     if (search_input !== undefined && search_input !== null) {
       search_input.focus()
     }

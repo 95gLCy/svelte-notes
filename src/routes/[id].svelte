@@ -118,29 +118,20 @@
     console.log('Added new item.')
   }
   const itemChanged = function(index) {
-    if (!changed_items.includes(index))
-      changed_items.push(index)
-    // Set timeout (throttle).
-    clearTimeout(save_timeout_items)
-    save_timeout_items = window.setTimeout(() => {
-      changed_items.forEach(i => {
-        notes.saveItem(note_id, i)
-        console.log('Item ' + i + ' has changed.')
-      })
-      changed_items = []
-    }, save_delay)
+    notes.saveItemChanges(note_id, index)
+  }
+  const collapse = function(index) {
+    notes.collapseItemsInNote(note_id, index)
+  }
+  const expand = function(index) {
+    notes.expandItemsInNote(note_id, index)
   }
   const checkEmptyTitle = function() {
     if (note.title.trim() === '')
       note.title = 'Untitled'
   }
   const titleChangeDetected = function() {
-    // Set timeout (throttle).
-    clearTimeout(save_timeout_title)
-    save_timeout_title = window.setTimeout(() => {
-      notes.saveNote(note_id)
-      console.log('Title has changed.')
-    }, save_delay)
+    notes.saveNoteChanges(note_id)
   }
   const handleWindowKeyPress = function(event) {
     let key = event.key
@@ -166,18 +157,20 @@
       note = matched_notes[0]
   }
 
-  onMount(() => {
+  $: {
     // Focus on note title if it's untitled and empty.
     if (title_ta !== undefined && title_ta !== null)
-      if ((note.title.trim() === 'Untitled' || note.title.trim() === '') &&
-        note.items.length === 0)
+      if (note.isEmpty())
         title_ta.focus()
+  }
+
+  onMount(() => {
   })
 
 </script>
 
 <svelte:head>
-  <title>Note {note_id}</title>
+  <title>{note !== undefined ? note.title : note_id}</title>
 </svelte:head>
 
 <svelte:window on:keydown={handleWindowKeyPress}/>
@@ -204,7 +197,9 @@
       on:decrease-indentation={e => decreaseIndentation(e.detail)}
       on:mark-done={e => markDone(e.detail)}
       on:add-item-below={e => addItemBelow(e.detail)}
-      on:item-changed={e => itemChanged(e.detail)} />
+      on:item-changed={e => itemChanged(e.detail)}
+      on:collapse={e => collapse(e.detail)}
+      on:expand={e => expand(e.detail)} />
   {/each}
 
 {/if}
