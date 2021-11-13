@@ -22,15 +22,22 @@
   let selected
   let note
   let title_ta
-  let save_timeout_items
-  let save_timeout_title
   let changed_items = []
   
   // Methods 
-  const selectItem = function(index) {
-    if (index >= 0 && index < note.items.length)
-      selected = index
-    console.log(note.items[index])
+  const selectItem = async function(index) {
+    if (index >= 0 && index < note.items.length) {
+      let offset = 0
+      if (selected !== undefined && selected !== index) {
+        let previous_selected = selected
+        offset = deselectItem(selected)
+        if (previous_selected > index)
+          offset = 0
+      }
+      await tick
+      selected = index - offset      
+      console.log(note.items[selected])
+    }
   }
   const deselectItem = function(index) {
     if (selected === index) {

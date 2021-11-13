@@ -127,7 +127,7 @@
 
 <style>
   .background-div {
-    background-image: url("static/bg_lines.png");
+    background-image: url("/bg_lines.png");
     background-repeat: repeat;
     background-size: 30 1px;
     background-position: left -1px bottom 0px;

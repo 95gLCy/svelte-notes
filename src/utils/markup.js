@@ -4,10 +4,10 @@ const testCodeBlock = function(text) {
   return regex.test(text)
 }
 
-const testNumberedList = function(text) {
-  let regex = /^(\d+)[\.\)]\s+(\S.*)$/
-  return regex.test(text)
-}
+// const testNumberedList = function(text) {
+//   let regex = /^(\d+)[\.\)]\s+(\S.*)$/
+//   return regex.test(text)
+// }
 
 export class Markup {
 
@@ -16,8 +16,8 @@ export class Markup {
   }
 
   parser(item) {
+    // this.item = item
     this.text = item.title
-    this.item = item
     // If it's a code block, skip all the other parsers.
     if (testCodeBlock(this.text))
       return this.parseCodeBlock().text
@@ -34,19 +34,19 @@ export class Markup {
       .text
   }
 
-  retrieveNumber(item, level) {
-    if (item.previous === null)
-      return 1
-    if (item.previous.level < level)
-      return 1
-    if (item.previous.level === level)
-      if (testNumberedList(item.previous.title))
-        return this.retrieveNumber(item.previous, level) + 1
-      else
-        return 1
-    if (item.previous.level > level)
-      return this.retrieveNumber(item.previous, level)
-  }
+  // retrieveNumber(item, level) {
+  //   if (item.previous === null)
+  //     return 1
+  //   if (item.previous.level < level)
+  //     return 1
+  //   if (item.previous.level === level)
+  //     if (testNumberedList(item.previous.title))
+  //       return this.retrieveNumber(item.previous, level) + 1
+  //     else
+  //       return 1
+  //   if (item.previous.level > level)
+  //     return this.retrieveNumber(item.previous, level)
+  // }
 
   parseHeading() {
     let h4_regex = /^####\s+(\S.*)$/
